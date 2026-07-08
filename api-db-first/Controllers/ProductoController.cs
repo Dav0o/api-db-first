@@ -1,5 +1,6 @@
 ﻿using api_db_first.DTOs;
 using api_db_first.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,7 @@ namespace api_db_first.Controllers
             _productoService = productoService;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> Listar([FromQuery] ProductoListarDto dto)
         {

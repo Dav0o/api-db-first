@@ -43,7 +43,11 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<ProductosAuditorium> ProductosAuditoria { get; set; }
 
+    public virtual DbSet<Role> Roles { get; set; }
+
     public virtual DbSet<Transaccione> Transacciones { get; set; }
+
+    public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UsuariosBiblioteca> UsuariosBibliotecas { get; set; }
 
@@ -304,6 +308,15 @@ public partial class AppDbContext : DbContext
             entity.Property(e => e.Usuario).HasMaxLength(100);
         });
 
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Roles__3214EC07C1DD349C");
+
+            entity.HasIndex(e => e.Name, "UQ__Roles__737584F67DAED47B").IsUnique();
+
+            entity.Property(e => e.Name).HasMaxLength(50);
+        });
+
         modelBuilder.Entity<Transaccione>(entity =>
         {
             entity.HasKey(e => e.TransaccionId).HasName("PK__Transacc__86A849DEDB967C07");
@@ -327,6 +340,34 @@ public partial class AppDbContext : DbContext
             entity.HasOne(d => d.CuentaOrigenNavigation).WithMany(p => p.TransaccioneCuentaOrigenNavigations)
                 .HasForeignKey(d => d.CuentaOrigen)
                 .HasConstraintName("FK__Transacci__Cuent__571DF1D5");
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Users__3214EC07E1E26A57");
+
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D105343D38A009").IsUnique();
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getutcdate())");
+            entity.Property(e => e.Email).HasMaxLength(150);
+            entity.Property(e => e.PasswordHash).HasMaxLength(255);
+
+            entity.HasMany(d => d.Roles).WithMany(p => p.Users)
+                .UsingEntity<Dictionary<string, object>>(
+                    "UserRole",
+                    r => r.HasOne<Role>().WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__UserRoles__RoleI__43D61337"),
+                    l => l.HasOne<User>().WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("FK__UserRoles__UserI__42E1EEFE"),
+                    j =>
+                    {
+                        j.HasKey("UserId", "RoleId").HasName("PK__UserRole__AF2760ADA6D20B8F");
+                        j.ToTable("UserRoles");
+                    });
         });
 
         modelBuilder.Entity<UsuariosBiblioteca>(entity =>
@@ -378,11 +419,9 @@ public partial class AppDbContext : DbContext
                 .HasConstraintName("FK__Ventas__Producto__440B1D61");
         });
 
-        modelBuilder.Entity<ProductoResult>().HasNoKey();
-        modelBuilder.Entity<MensajeResult>().HasNoKey();
-
         OnModelCreatingPartial(modelBuilder);
     }
+
 
     public async Task<List<ProductoResult>> sp_Productos_Listar(
            string? nombre = null,
@@ -468,4 +507,5 @@ public partial class AppDbContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
 }
